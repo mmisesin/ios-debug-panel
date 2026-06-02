@@ -1,5 +1,11 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 public struct DebugPanelView: View {
     private let logger: DebugLogger
 
@@ -114,6 +120,8 @@ private struct LogEntryRow: View {
 private struct LogEntryDetail: View {
     let entry: DebugLogEntry
 
+    @State private var copied = false
+
     var body: some View {
         List {
             Section("Summary") {
@@ -141,6 +149,30 @@ private struct LogEntryDetail: View {
             }
         }
         .navigationTitle(entry.title)
+        .toolbar {
+            ToolbarItem {
+                Button(copied ? "Copied" : "Copy Summary", systemImage: copied ? "checkmark" : "doc.on.doc") {
+                    DebugClipboard.copy(entry.copySummary)
+                    copied = true
+
+                    Task {
+                        try? await Task.sleep(for: .seconds(1.5))
+                        copied = false
+                    }
+                }
+            }
+        }
+    }
+}
+
+private enum DebugClipboard {
+    static func copy(_ string: String) {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = string
+        #elseif canImport(AppKit)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(string, forType: .string)
+        #endif
     }
 }
 

@@ -50,3 +50,5 @@ DebugLogger.shared.recordNetwork(
 ```
 
 Entries are kept in memory for the current app session. Call `DebugLogger.shared.clear()` to remove them.
+
+In the panel detail view, use **Copy Summary** to copy a readable summary of the selected log. Network summaries include request, status, duration, headers, bodies, response, and error details when they were recorded.
