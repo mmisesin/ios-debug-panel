@@ -10,8 +10,11 @@ public struct DebugPanelView: View {
     private let logger: DebugLogger
 
     @State private var entries: [DebugLogEntry]
-    @State private var selectedKind: DebugLogEntry.Kind?
+    @State private var selectedKind = LogKindFilter.all
+    @State private var selectedLevel = LogLevelFilter.all
     @State private var selectedEntry: DebugLogEntry?
+    @State private var query = ""
+    @State private var listDisplayMode = DebugLogListDisplayMode.route
 
     public init(logger: DebugLogger = .shared) {
         self.logger = logger
@@ -22,20 +25,25 @@ public struct DebugPanelView: View {
         NavigationSplitView {
             List(selection: $selectedEntry) {
                 ForEach(filteredEntries) { entry in
-                    LogEntryRow(entry: entry)
+                    LogEntryRow(entry: entry, displayMode: listDisplayMode)
                         .tag(entry)
                 }
             }
             .navigationTitle("Debug Logs")
+            .searchable(text: $query, prompt: "Search logs")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Picker("Log type", selection: $selectedKind) {
-                        Text("All").tag(nil as DebugLogEntry.Kind?)
-                        Text("Console").tag(DebugLogEntry.Kind?.some(.console))
-                        Text("Network").tag(DebugLogEntry.Kind?.some(.network))
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 260)
+                    LogKindPicker(selection: $selectedKind)
+                }
+
+                ToolbarItemGroup {
+                    LogFilterMenu(
+                        selectedLevel: $selectedLevel,
+                        hasActiveFilters: hasActiveFilters,
+                        reset: resetFilters
+                    )
+
+                    LogViewMenu(listDisplayMode: $listDisplayMode)
                 }
 
                 ToolbarItem {
@@ -53,6 +61,8 @@ public struct DebugPanelView: View {
                         systemImage: "text.bubble",
                         description: Text("Recorded console and network logs appear here.")
                     )
+                } else if filteredEntries.isEmpty {
+                    ContentUnavailableView.search(text: query.isEmpty ? "selected filters" : query)
                 }
             }
         } detail: {
@@ -77,19 +87,147 @@ public struct DebugPanelView: View {
     }
 
     private var filteredEntries: [DebugLogEntry] {
-        entries
-            .filter { entry in
-                guard let selectedKind else {
-                    return true
-                }
-                return entry.kind == selectedKind
+        let filter = DebugLogFilter(query: query, kind: selectedKind.kind, level: selectedLevel.level)
+
+        return Array(entries
+            .filter { filter.matches($0) }
+            .reversed())
+    }
+
+    private var hasActiveFilters: Bool {
+        query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ||
+            selectedKind != .all ||
+            selectedLevel != .all
+    }
+
+    private func resetFilters() {
+        query = ""
+        selectedKind = .all
+        selectedLevel = .all
+    }
+}
+
+private enum LogKindFilter: String, CaseIterable, Identifiable {
+    case all
+    case console
+    case network
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            "All"
+        case .console:
+            "Console"
+        case .network:
+            "Network"
+        }
+    }
+
+    var kind: DebugLogEntry.Kind? {
+        switch self {
+        case .all:
+            nil
+        case .console:
+            .console
+        case .network:
+            .network
+        }
+    }
+}
+
+private enum LogLevelFilter: String, CaseIterable, Identifiable {
+    case all
+    case debug
+    case info
+    case warning
+    case error
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            "Any Level"
+        case .debug:
+            "Debug"
+        case .info:
+            "Info"
+        case .warning:
+            "Warning"
+        case .error:
+            "Error"
+        }
+    }
+
+    var level: DebugLogEntry.Level? {
+        switch self {
+        case .all:
+            nil
+        case .debug:
+            .debug
+        case .info:
+            .info
+        case .warning:
+            .warning
+        case .error:
+            .error
+        }
+    }
+}
+
+private struct LogKindPicker: View {
+    @Binding var selection: LogKindFilter
+
+    var body: some View {
+        Picker("Log type", selection: $selection) {
+            ForEach(LogKindFilter.allCases) { filter in
+                Text(filter.title).tag(filter)
             }
-            .reversed()
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 260)
+    }
+}
+
+private struct LogFilterMenu: View {
+    @Binding var selectedLevel: LogLevelFilter
+    let hasActiveFilters: Bool
+    let reset: () -> Void
+
+    var body: some View {
+        Menu("Filters", systemImage: "line.3.horizontal.decrease.circle") {
+            Picker("Level", selection: $selectedLevel) {
+                ForEach(LogLevelFilter.allCases) { filter in
+                    Text(filter.title).tag(filter)
+                }
+            }
+
+            if hasActiveFilters {
+                Button("Reset Filters", systemImage: "xmark.circle", action: reset)
+            }
+        }
+    }
+}
+
+private struct LogViewMenu: View {
+    @Binding var listDisplayMode: DebugLogListDisplayMode
+
+    var body: some View {
+        Menu("View", systemImage: "eye") {
+            Picker("Network Row Text", selection: $listDisplayMode) {
+                ForEach(DebugLogListDisplayMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+        }
     }
 }
 
 private struct LogEntryRow: View {
     let entry: DebugLogEntry
+    let displayMode: DebugLogListDisplayMode
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -108,7 +246,7 @@ private struct LogEntryRow: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text(entry.message)
+            Text(entry.listMessage(displayMode: displayMode))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
@@ -189,4 +327,5 @@ private extension DebugLogEntry.Level {
             .red
         }
     }
+
 }
