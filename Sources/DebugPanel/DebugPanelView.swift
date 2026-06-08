@@ -32,12 +32,9 @@ public struct DebugPanelView: View {
             .navigationTitle("Debug Logs")
             .searchable(text: $query, prompt: "Search logs")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    LogKindPicker(selection: $selectedKind)
-                }
-
                 ToolbarItemGroup {
                     LogFilterMenu(
+                        selectedKind: $selectedKind,
                         selectedLevel: $selectedLevel,
                         hasActiveFilters: hasActiveFilters,
                         reset: resetFilters
@@ -177,27 +174,20 @@ private enum LogLevelFilter: String, CaseIterable, Identifiable {
     }
 }
 
-private struct LogKindPicker: View {
-    @Binding var selection: LogKindFilter
-
-    var body: some View {
-        Picker("Log type", selection: $selection) {
-            ForEach(LogKindFilter.allCases) { filter in
-                Text(filter.title).tag(filter)
-            }
-        }
-        .pickerStyle(.segmented)
-        .frame(maxWidth: 260)
-    }
-}
-
 private struct LogFilterMenu: View {
+    @Binding var selectedKind: LogKindFilter
     @Binding var selectedLevel: LogLevelFilter
     let hasActiveFilters: Bool
     let reset: () -> Void
 
     var body: some View {
         Menu("Filters", systemImage: "line.3.horizontal.decrease.circle") {
+            Picker("Type", selection: $selectedKind) {
+                ForEach(LogKindFilter.allCases) { filter in
+                    Text(filter.title).tag(filter)
+                }
+            }
+
             Picker("Level", selection: $selectedLevel) {
                 ForEach(LogLevelFilter.allCases) { filter in
                     Text(filter.title).tag(filter)
