@@ -1,11 +1,5 @@
 import SwiftUI
 
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
-
 public struct DebugPanelView: View {
     private let logger: DebugLogger
 
@@ -242,65 +236,6 @@ private struct LogEntryRow: View {
                 .lineLimit(2)
         }
         .padding(.vertical, 4)
-    }
-}
-
-private struct LogEntryDetail: View {
-    let entry: DebugLogEntry
-
-    @State private var copied = false
-
-    var body: some View {
-        List {
-            Section("Summary") {
-                LabeledContent("Type", value: entry.kind.rawValue.capitalized)
-                LabeledContent("Level", value: entry.level.rawValue.capitalized)
-                LabeledContent("Time", value: entry.date.formatted(date: .abbreviated, time: .standard))
-                LabeledContent("Message", value: entry.message)
-            }
-
-            if !entry.details.isEmpty {
-                Section("Details") {
-                    ForEach(entry.details.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(key)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            Text(value)
-                                .font(.body.monospaced())
-                                .textSelection(.enabled)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-            }
-        }
-        .navigationTitle(entry.title)
-        .toolbar {
-            ToolbarItem {
-                Button(copied ? "Copied" : "Copy Summary", systemImage: copied ? "checkmark" : "doc.on.doc") {
-                    DebugClipboard.copy(entry.copySummary)
-                    copied = true
-
-                    Task {
-                        try? await Task.sleep(for: .seconds(1.5))
-                        copied = false
-                    }
-                }
-            }
-        }
-    }
-}
-
-private enum DebugClipboard {
-    static func copy(_ string: String) {
-        #if canImport(UIKit)
-        UIPasteboard.general.string = string
-        #elseif canImport(AppKit)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(string, forType: .string)
-        #endif
     }
 }
 

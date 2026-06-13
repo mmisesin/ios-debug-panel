@@ -54,3 +54,5 @@ Entries are kept in memory for the current app session. Call `DebugLogger.shared
 In the panel detail view, use **Copy Summary** to copy a readable summary of the selected log. Network summaries include request, status, duration, headers, bodies, response, and error details when they were recorded.
 
 Use the panel search field and **Filters** menu to narrow logs by query, type, and level. Use the **View** menu to choose how network rows are displayed: full URL, host plus path, path plus query, or route only.
+
+Inside a log detail view, use **Search this log** to find text in summary fields, headers, request payloads, response payloads, and other recorded details. The panel scrolls to the first matching field and highlights matching text.
