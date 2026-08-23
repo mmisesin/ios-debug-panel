@@ -8,9 +8,17 @@ import AppKit
 
 struct LogEntryDetail: View {
     let entry: DebugLogEntry
+    let formattingOptions: DebugLogFormattingOptions
+    private let formattedDetailFields: [DebugLogDetailField]
 
     @State private var copied = false
     @State private var detailQuery = ""
+
+    init(entry: DebugLogEntry, formattingOptions: DebugLogFormattingOptions) {
+        self.entry = entry
+        self.formattingOptions = formattingOptions
+        self.formattedDetailFields = entry.detailFields(formattingOptions: formattingOptions)
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -32,7 +40,7 @@ struct LogEntryDetail: View {
         .toolbar {
             ToolbarItem {
                 Button(copied ? "Copied" : "Copy Summary", systemImage: copied ? "checkmark" : "doc.on.doc") {
-                    DebugClipboard.copy(entry.copySummary)
+                    DebugClipboard.copy(entry.copySummary(formattingOptions: formattingOptions))
                     copied = true
 
                     Task {
@@ -53,9 +61,9 @@ struct LogEntryDetail: View {
                 }
             }
 
-            if !entry.detailFields.isEmpty {
+            if !formattedDetailFields.isEmpty {
                 Section("Details") {
-                    ForEach(entry.detailFields) { field in
+                    ForEach(formattedDetailFields) { field in
                         DetailFieldRow(field: field, query: detailQuery, isFocused: field.id == firstMatchID)
                             .id(field.id)
                     }
@@ -71,7 +79,9 @@ struct LogEntryDetail: View {
     }
 
     private var firstMatchID: String? {
-        entry.firstDetailMatchID(query: detailQuery)
+        (entry.detailSummaryFields + formattedDetailFields)
+            .first { $0.matches(detailQuery) }?
+            .id
     }
 
     private var searchHasNoMatches: Bool {

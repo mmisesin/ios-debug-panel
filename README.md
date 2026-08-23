@@ -25,6 +25,25 @@ struct DebugSheet: View {
 DebugPanelView(logger: DebugLogger(maxEntryCount: 1_000))
 ```
 
+To make captured JSON bodies and header blocks easier to scan, opt in to beautified formatting:
+
+```swift
+DebugPanelView(formattingOptions: .beautified)
+```
+
+Beautified formatting pretty-prints JSON and normalizes header whitespace and ordering without changing the captured log entry. You can enable the behaviors separately:
+
+```swift
+DebugPanelView(
+    formattingOptions: DebugLogFormattingOptions(
+        prettyPrintsJSON: true,
+        normalizesHeaders: false
+    )
+)
+```
+
+The default is `.raw`, which preserves the existing presentation. The **Copy Summary** action uses the same formatting options as the detail view.
+
 ## Recording Console Logs
 
 ```swift

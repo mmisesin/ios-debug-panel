@@ -2,6 +2,10 @@ import Foundation
 
 public extension DebugLogEntry {
     var copySummary: String {
+        copySummary(formattingOptions: .raw)
+    }
+
+    func copySummary(formattingOptions: DebugLogFormattingOptions) -> String {
         var lines = [
             "\(kind.displayName) Log",
             "Title: \(title)",
@@ -13,7 +17,7 @@ public extension DebugLogEntry {
         if !details.isEmpty {
             lines.append("")
             lines.append("Details:")
-            lines.append(contentsOf: summaryDetailLines)
+            lines.append(contentsOf: summaryDetailLines(formattingOptions: formattingOptions))
         }
 
         return lines.joined(separator: "\n")
@@ -25,7 +29,7 @@ public extension DebugLogEntry {
         return formatter.string(from: date)
     }
 
-    private var summaryDetailLines: [String] {
+    private func summaryDetailLines(formattingOptions: DebugLogFormattingOptions) -> [String] {
         let preferredKeys = [
             "Method",
             "URL",
@@ -43,14 +47,22 @@ public extension DebugLogEntry {
             guard let value = details[key] else {
                 return nil
             }
-            return formattedDetailLine(key: key, value: value)
+            return formattedDetailLine(
+                key: key,
+                value: formattingOptions.format(label: key, value: value)
+            )
         }
 
         let remainingLines = details.keys
             .filter { preferredKeys.contains($0) == false }
             .sorted()
             .compactMap { key in
-                details[key].map { formattedDetailLine(key: key, value: $0) }
+                details[key].map {
+                    formattedDetailLine(
+                        key: key,
+                        value: formattingOptions.format(label: key, value: $0)
+                    )
+                }
             }
 
         return preferredLines + remainingLines

@@ -33,15 +33,30 @@ public extension DebugLogEntry {
     }
 
     var detailFields: [DebugLogDetailField] {
+        detailFields(formattingOptions: .raw)
+    }
+
+    func detailFields(formattingOptions: DebugLogFormattingOptions) -> [DebugLogDetailField] {
         details
             .sorted(by: { $0.key < $1.key })
             .map { key, value in
-                DebugLogDetailField(id: "detail.\(key)", label: key, value: value)
+                DebugLogDetailField(
+                    id: "detail.\(key)",
+                    label: key,
+                    value: formattingOptions.format(label: key, value: value)
+                )
             }
     }
 
     func firstDetailMatchID(query: String) -> String? {
-        (detailSummaryFields + detailFields)
+        firstDetailMatchID(query: query, formattingOptions: .raw)
+    }
+
+    func firstDetailMatchID(
+        query: String,
+        formattingOptions: DebugLogFormattingOptions
+    ) -> String? {
+        (detailSummaryFields + detailFields(formattingOptions: formattingOptions))
             .first { $0.matches(query) }?
             .id
     }

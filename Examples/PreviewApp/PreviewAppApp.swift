@@ -6,7 +6,7 @@ struct PreviewAppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DebugPanelView(logger: logger)
+            DebugPanelView(logger: logger, formattingOptions: .beautified)
         }
     }
 }

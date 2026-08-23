@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct DebugPanelView: View {
     private let logger: DebugLogger
+    private let formattingOptions: DebugLogFormattingOptions
 
     @State private var entries: [DebugLogEntry]
     @State private var selectedKind = LogKindFilter.all
@@ -10,8 +11,12 @@ public struct DebugPanelView: View {
     @State private var query = ""
     @State private var listDisplayMode = DebugLogListDisplayMode.route
 
-    public init(logger: DebugLogger = .shared) {
+    public init(
+        logger: DebugLogger = .shared,
+        formattingOptions: DebugLogFormattingOptions = .raw
+    ) {
         self.logger = logger
+        self.formattingOptions = formattingOptions
         self._entries = State(initialValue: logger.entries)
     }
 
@@ -58,7 +63,7 @@ public struct DebugPanelView: View {
             }
         } detail: {
             if let selectedEntry {
-                LogEntryDetail(entry: selectedEntry)
+                LogEntryDetail(entry: selectedEntry, formattingOptions: formattingOptions)
             } else {
                 ContentUnavailableView(
                     "Select a Log",
